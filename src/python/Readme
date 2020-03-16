@@ -1,3 +1,3 @@
-All the python files from my master's project. In future development, the original files will be placed in a sub-directory.
+The original .py files are contained in the "Original_files" folder, found & utilized in my dissertation paper.
 
-In the meantime, the current implementation of the project will be implemented in c++.
+The further developed/currently developing files are contained in the "dev" folder.
