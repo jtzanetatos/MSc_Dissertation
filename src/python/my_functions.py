@@ -7,7 +7,7 @@ Created on Tue Sep  3 21:12:19 2019
 """
 import cv2 as cv
 import numpy as np
-import pandas as pd
+from scipy.stats import norm, entropy, kstest
 from sklearn.cluster import KMeans
 #import ICP
 
@@ -26,116 +26,111 @@ def kernels_hist(frame):
     Outputs:    hist: Array of size 256x3 that contains the evaluated histograms
                       of each colour channel's kernels of interest.
     '''
+    def lcd(row, colm):
+        '''
+        Function that evaluates the lowest common divisor for the input frame's
+        dimnesions. Will return an odd number.
+        
+        Parameters
+        ----------
+        row : int
+            Number of rows of elements.
+        colm : int
+            Number of columns of elements.
+            
+        Returns
+        -------
+        kernSize : int
+            Dynamic kernel size; lowest common divisor.
+            
+        '''
+        # Initialize kernel size
+        kernSize = 3
+        
+        # Search for optimal lowest value
+        while row%kernSize !=0 or colm%kernSize !=0:
+            # BUG: will enter inf loop if not adjust kernSize val.
+            kernSize += 2
+        # Return kernel size
+        return kernSize
+    
+    # Frame is BGR/RGB
     try:
         # Get input frame dimmentions
-        height, width, col = frame.shape
-    except:
+        row, colm, col = frame.shape
+        # Kernel size
+        kern_size = lcd(row, colm)
+    # Frame is Grayscale/Binary
+    except ValueError:
         # Get input grayscale frame dimmentions
-        height, width = frame.shape
-        col = 1
-    
-    # Initialize list to store temp kernels
-    img_kernel = []
-    
-    # Initialize lists to store resulting kernels that contain useful info
-    b_kernel = []
-    g_kernel = []
-    r_kernel = []
-    
-    # Loop through colour channels of current frame
-    for c in range(0,col):
-        # Loop through width of current frame
-        for i in range(0, width, 3):
-            # Loop through height of current rame
-            for k in range(0, height, 3):
-                # Case for when at the top-left corner of width
-                if i == 0:
-                    # Case for when at the top-left corner of frame
-                    if k == 0:
-                        # If kernel non-empty
-                        if frame[0:3, 0:3, c].size > 0:
-                            # If kernel contains useful info
-                            if np.any(frame[0:3, 0:3, c]) > 0:
-                                # Store Current kernel values
-                                img_kernel.append(frame[0:3, 0:3, c])
-                                
-                            # Else continue to next kernel
-                            else:
-                                continue
-                        # If kernel empty, continue to next kernel
+        row, colm = frame.shape
+        # Kernel size
+        kern_size = lcd(row, colm)
+        
+        # Initialize list to store kernels
+        kerns = []
+        
+        for i in range(1, row, kern_size):
+            for k in range(1, colm, kern_size):
+                # Kernel contains at least one non-zero element (useful info)
+                if frame[i-1:i+2, k-1:k+2].any() > 0:
+                    # Append kernel
+                    kerns.append(frame[i-1:i+2, k-1:k+2])
+        # BUG: list at index [1744] appends 2x2 kernel
+        # Must implement an assistive function for dynamic kernel size or pad with NaN (?)
+        # Convert list to array
+        kern_arr = np.asarray(kerns)
+        
+        # Clear list
+        kerns.clear()
+        
+        # Initialize histogram array
+        hist = np.zeros(256, dtype=np.uint64)
+        
+        # Evaluate histogram
+        hist = np.bincount(kern_arr.flatten(), minlength=256)
+        
+        # Return histogram
+        return hist
+    else:
+        # Initialize lists for each colour channel
+        B_kern = []
+        G_kern = []
+        R_kern = []
+        
+        # Median image kernels
+        for c in range(col):
+            for i in range(1, row, kern_size):
+                for k in range(1, colm, kern_size):
+                    # Kernel contains at least one non-zero element (useful info)
+                    if frame[i-1:i+2, k-1:k+2, c].any() > 0:
+                        # Blue channel
+                        if c == 0:
+                            B_kern.append(frame[i-1:i+2, k-1:k+2, 0])
+                        # Green channel
+                        elif c == 1:
+                            G_kern.append(frame[i-1:i+2, k-1:k+2, 1])
+                        # Red channel
                         else:
-                            continue
-                    # If beyond top-left image corner
-                    else:
-                        # If kernel non-empty
-                        if frame[k-3:k, 0:3, c].size > 0:
-                            # If kernel contains useful info
-                            if np.any(frame[k-3:k, 0:3, c]) > 0:
-                                # Store Current kernel values
-                                img_kernel.append(frame[k-3:k, 0:3, c])
-                                
-                            # Else continue to next kernel
-                            else:
-                                continue
-                        # If kernel empty, continue to next kernel
-                        else:
-                            continue
-                # If not at the top-left conrer of width
-                else:
-                    # Check if kernel is non-empty
-                    if frame[k-3:k, i-3:i, c].size > 0:
-                        # If kernel contains useful info
-                        if np.any(frame[k-3:k, i-3:i, c]) > 0:
-                            # Store current kernel values
-                            img_kernel.append(frame[k-3:k, i-3:i, c])
-                            
-                        # Else continue to next kernel
-                        else:
-                            continue
-                    # If kernel empty, continue to next kernel
-                    else:
-                        continue
-        # If blue channel's kernels have been evaluated
-        if c == 0:
-            # Store kernels to blue kernels list
-            b_kernel = img_kernel.copy()
-            
-            # Clear list for next colour channel
-            img_kernel.clear()
-            
-        # If green channe's kernels have been evaluated
-        elif c == 1:
-            # Store kernels to green kernels list
-            g_kernel = img_kernel.copy()
-            
-            # Clear list for next colour channel
-            img_kernel.clear()
-            
-        # If red channel's kernes have been evaluated
-        else:
-            # Store kernels to red kernels list
-            r_kernel = img_kernel.copy()
-            
-            # Clear list
-            img_kernel.clear()
-    
-    
-    # Assign array to store kernel histograms
-    hist = np.zeros((256, 3), dtype=np.uint8)
-    
-    
-    # Evaluate histogram of kernels
-    # Blue channel
-    hist[:, 0] = np.bincount(np.asarray(b_kernel, dtype=np.uint8).ravel(),minlength=256)
-    
-    # Green channel
-    hist[:, 1] = np.bincount(np.asarray(g_kernel, dtype=np.uint8).ravel(),minlength=256)
-    
-    # Red channel
-    hist[:, 2] = np.bincount(np.asarray(r_kernel, dtype=np.uint8).ravel(),minlength=256)
-    
-    # Return resulting array
-    return(hist)
+                            R_kern.append(frame[i-1:i+2, k-1:k+2, 2])
+        # Convert lists into array
+        kerns = np.array((B_kern, G_kern, R_kern), dtype=np.uint8)
+        
+        # Assign array to store kernel histograms
+        hist = np.zeros((256, 3), dtype=np.uint64)
+        
+        # Evaluate histogram of kernels
+        # Blue channel
+        hist[:, 0] = np.bincount(kerns[0].flatten(),minlength=256)
+        
+        # Green channel
+        hist[:, 1] = np.bincount(kerns[1].flatten(),minlength=256)
+        
+        # Red channel
+        hist[:, 2] = np.bincount(kerns[2].flatten(),minlength=256)
+        
+        # Return resulting array
+        return hist
 
 # --------------------------------------------------------------------------- #
 # Determine  available Video (Camera sensors) sources
