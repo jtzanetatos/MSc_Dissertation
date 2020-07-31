@@ -66,7 +66,7 @@ def kernels_hist(frame):
     
     # Kernel size
     kern_size = 3
-    # Frame is BGR/RGB
+    # Assert image type (RGB/Grayscale)
     try:
         # Get input frame dimmentions
         row, colm, col = frame.shape
@@ -91,6 +91,13 @@ def kernels_hist(frame):
                     elif frame[i-1:i+2, k-1:k+2].shape[1] == 2:
                         # Expand kernel column & append NaN values
                         kerns.append(np.column_stack((frame[i-1:i+2, k-1:k+2], expd_vals)))
+                        
+                    # Expand both column & row
+                    elif frame[i-1:i+2, k-1:k+2].shape[1] == 2 and \
+                        frame[i-1:i+2, k-1:k+2].shape[0] == 2:
+                            # Expand & append kernel
+                            kerns.append(np.pad(frame[i-1:i+2, k-1:k+2], (0, 1), 
+                                                'constant', constant_values=(np.nan)))
                     else:
                         # Append kernel
                         kerns.append(frame[i-1:i+2, k-1:k+2])
@@ -116,6 +123,7 @@ def kernels_hist(frame):
         
         # Return histogram
         return hist
+    # Frame is RGB
     else:
         # Initialize lists for each colour channel
         B_kern = []
@@ -139,6 +147,12 @@ def kernels_hist(frame):
                             elif frame[i-1:i+2, k-1:k+2, 0].shape[1] == 2:
                                 # Expand kernel column & append NaN values
                                 B_kern.append(np.column_stack((frame[i-1:i+2, k-1:k+2, 0], expd_vals)))
+                            # Expand both column & row
+                            elif frame[i-1:i+2, k-1:k+2, 0].shape[1] == 2 and \
+                                frame[i-1:i+2, k-1:k+2, 0].shape[0] == 2:
+                                    # Expand & append kernel
+                                    B_kern.append(np.pad(frame[i-1:i+2, k-1:k+2, 0], (0, 1), 
+                                                'constant', constant_values=(np.nan)))
                             else:
                                 B_kern.append(frame[i-1:i+2, k-1:k+2, 0])
                         # Green channel
@@ -152,6 +166,12 @@ def kernels_hist(frame):
                             elif frame[i-1:i+2, k-1:k+2, 1].shape[1] == 2:
                                 # Expand kernel column & append NaN values
                                 G_kern.append(np.column_stack((frame[i-1:i+2, k-1:k+2, 1], expd_vals)))
+                            # Expand both column & row
+                            elif frame[i-1:i+2, k-1:k+2, 1].shape[1] == 2 and \
+                                frame[i-1:i+2, k-1:k+2, 1].shape[0] == 2:
+                                    # Expand & append kernel
+                                    B_kern.append(np.pad(frame[i-1:i+2, k-1:k+2, 1], (0, 1), 
+                                                'constant', constant_values=(np.nan)))
                             else:
                                 G_kern.append(frame[i-1:i+2, k-1:k+2, 1])
                         # Red channel
@@ -165,6 +185,12 @@ def kernels_hist(frame):
                             elif frame[i-1:i+2, k-1:k+2, 2].shape[1] == 2:
                                 # Expand kernel column & append NaN values
                                 R_kern.append(np.column_stack((frame[i-1:i+2, k-1:k+2, 2], expd_vals)))
+                            # Expand both column & row
+                            elif frame[i-1:i+2, k-1:k+2, 2].shape[1] == 2 and \
+                                frame[i-1:i+2, k-1:k+2, 2].shape[0] == 2:
+                                    # Expand & append kernel
+                                    B_kern.append(np.pad(frame[i-1:i+2, k-1:k+2, 2], (0, 1), 
+                                                'constant', constant_values=(np.nan)))
                             else:
                                 R_kern.append(frame[i-1:i+2, k-1:k+2, 2])
         # Evaluate mask for each colour channel
@@ -348,7 +374,8 @@ def hist_bpf(hist):
 # -------------------------------------------------------------------------- #
 def hist_norm(filt_hist):
     '''
-    
+    Histogram normalization function. Utilizes the mathematical normalization
+    of ( histogram - min value / max value - min value)
     
     Parameters
     ----------
