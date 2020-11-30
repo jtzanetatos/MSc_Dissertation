@@ -3,7 +3,7 @@
 """
 
 import numpy as np
-from scipy.stats import norm, entropy, kstest
+from scipy.stats import ks_2samp
 
 
 # --------------------------------------------------------------------------- #
@@ -11,7 +11,7 @@ from scipy.stats import norm, entropy, kstest
 # --------------------------------------------------------------------------- #
 def KSMoG2(curr_hist, prev_hist):
     '''
-    Kolmogorov-Smirnov Statistical test for MOG2 to converge.
+    Kolmogorov-Smirnov Statistical test for MOG2 convergence.
     The current function evaluates the Cumulative Densities Functions
     of current & previous frame's histograms. Depending upon the results of
     the function, the MOG2 algorithm will either continue, or stop(e.g. converged).
@@ -19,8 +19,8 @@ def KSMoG2(curr_hist, prev_hist):
     Alternative hypothesis (H1) is defined as histograms do not overlap significantly,
     therefore the MOG2 algorithm has not converged yet.
     
-    Null hypothesis (H0) is defined as histograms do overlap significantly,
-    therefore the MOG2 algorithm has converged, so it must stop.
+    Null hypothesis (H0) is defined as histograms overlap significantly,
+    therefore the MOG2 algorithm has converged.
     
     Inputs:         curr_hist: Histogram of current frame
                     prev_hist: Histogram of previous frame
@@ -34,29 +34,34 @@ def KSMoG2(curr_hist, prev_hist):
                     Tks_r : Difference between current and previous histogram
                             for the Red colour channel
     '''
-    # Evaluate CDF of each colour channel for current frame
-    curr_cdf_b = curr_hist[:, 0] / 256
-    curr_cdf_g = curr_hist[:, 1] / 256
-    curr_cdf_r = curr_hist[:, 2] / 256
+    # # Evaluate CDF of each colour channel for current frame
+    # curr_cdf_b = np.cumsum(curr_hist[:, 0]) / 256
+    # curr_cdf_g = np.cumsum(curr_hist[:, 1]) / 256
+    # curr_cdf_r = np.cumsum(curr_hist[:, 2]) / 256
     
-    # Evaluate CDF of each colour channel for previous frame
-    prev_cdf_b = prev_hist[:, 0] / 256
-    prev_cdf_g = prev_hist[:, 1] / 256
-    prev_cdf_r = prev_hist[:, 2] / 256
+    # # Evaluate CDF of each colour channel for previous frame
+    # prev_cdf_b = np.cumsum(prev_hist[:, 0]) / 256
+    # prev_cdf_g = np.cumsum(prev_hist[:, 1]) / 256
+    # prev_cdf_r = np.cumsum(prev_hist[:, 2]) / 256
     
-    # Evaluate difference for Blue colour channel
-    Tks_b = np.max(np.abs(curr_cdf_b - prev_cdf_b))
+    # # Evaluate difference for Blue colour channel
+    # Tks_b = np.max(np.abs(curr_cdf_b - prev_cdf_b))
     
-    # Evaluate difference for Green colour channel
-    Tks_g = np.max(np.abs(curr_cdf_g - prev_cdf_g))
+    # # Evaluate difference for Green colour channel
+    # Tks_g = np.max(np.abs(curr_cdf_g - prev_cdf_g))
     
-    # Evaluate difference for Red colour channel
-    Tks_r = np.max(np.abs(curr_cdf_r - prev_cdf_r))
+    # # Evaluate difference for Red colour channel
+    # Tks_r = np.max(np.abs(curr_cdf_r - prev_cdf_r))
+    
+    # Initialize array to store KS results
+    signCrit = np.zeros((1, 3), dtype=np.float32)
+    
+    # Evaluate KS Test for each colour channel
+    for i in range(3):
+        signCrit[i] = ks_2samp(curr_hist[:, i], prev_hist[:, i])
     
     # If Null Hypothesis true
-    if np.logical_and.reduce((Tks_b < 0.01,
-                             Tks_g < 0.01,
-                             Tks_r < 0.01)):
+    if signCrit.all() < 0.01:
         return True
     # If Alternative Hypothesis true
     else:
@@ -88,7 +93,7 @@ def HistDeviation(out_win_vals):
         h, _, c = out_win_vals.shape
     except:
         # If no windows of interest, return false
-        return(False)
+        return False
     else:
         
         # Initialize arrays to store results
