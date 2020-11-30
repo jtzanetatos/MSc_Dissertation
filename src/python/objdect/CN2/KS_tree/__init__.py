@@ -5,5 +5,7 @@
 from ._KS_Tree import KSAdaptiveWindows
 
 __all__ = [
-    'KSAdaptiveWindows'
+    'KSAdaptiveWindows',
+    'NullHypothesis',
+    'ClusterEstimator'
 ]
