@@ -27,33 +27,6 @@ def KernelsHist(frame):
         kernels of interest.
     
     '''
-    # def lcd(row, colm):
-    #     '''
-    #     Function that evaluates the lowest common divisor for the input frame's
-    #     dimnesions. Will return an odd number.
-        
-    #     Parameters
-    #     ----------
-    #     row : int
-    #         Number of rows of elements.
-    #     colm : int
-    #         Number of columns of elements.
-            
-    #     Returns
-    #     -------
-    #     kernSize : int
-    #         Dynamic kernel size; lowest common divisor.
-            
-    #     '''
-    #     # Initialize kernel size
-    #     kernSize = 3
-        
-    #     # Search for optimal lowest value
-    #     while row%kernSize !=0 or colm%kernSize !=0:
-    #         # BUG: will enter inf loop if not adjust kernSize val.
-    #         kernSize += 2
-    #     # Return kernel size
-    #     return kernSize
     
     # NaN expansion for kernel column & row
     expd_vals = np.full(3, np.nan)
@@ -245,7 +218,7 @@ def HistBpf(hist):
     except ValueError:
         
         # Initialize array to strore results
-        filt_hist = np.zeros(256, dtype=np.float32)
+        filt_hist = np.zeros(hist.shape, dtype=np.float32)
         
         # Find max value of useful info
         info_hist_max = np.max(hist[3:])
@@ -262,7 +235,7 @@ def HistBpf(hist):
             hp_thresh = info_hist_max * 0.2
             
             # Loop through each histogram's value & implement Band Pass FIR Filter
-            for k in range(256):
+            for k in range(hist.shape):
                 # If current value greater than max value of useful info (Low Pass)
                 if hist[k] > info_hist_max:
                     # Multiply current value with the corresponding coefficient
@@ -341,7 +314,7 @@ def HistNorm(filt_hist):
     # Image is Grayscale
     except ValueError:
         # Set default values to return
-        hist_norm = np.zeros(256, dtype=np.float32)
+        hist_norm = np.zeros(filt_hist.shape, dtype=np.float32)
         # Check if current colour channel's histogram is empty
         if np.any(filt_hist > 0) == True:
             # Normalize current histogram
