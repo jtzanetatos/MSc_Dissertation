@@ -3,8 +3,6 @@
 """
 
 import numpy as np
-from scipy.stats import ks_2samp
-
 
 # --------------------------------------------------------------------------- #
 # Kolmogorov-Sminrov Statistical Test to converge MOG2
@@ -22,48 +20,37 @@ def KSMoG2(curr_hist, prev_hist):
     Null hypothesis (H0) is defined as histograms overlap significantly,
     therefore the MOG2 algorithm has converged.
     
-    Inputs:         curr_hist: Histogram of current frame
-                    prev_hist: Histogram of previous frame
+    Parameters
+    ----------
+    curr_hist : float 32 2D array
+        Histogram of current frame.
+    prev_hist : float 32 2D array
+        N-10 frame's histogram.
     
-    Outputs:        Tks_b : Difference current current and previous histogram 
-                            for the Blue colour channel.
-                    
-                    Tks_g : Difference between current and previous histogram 
-                            for the Green colour channel.
-                    
-                    Tks_r : Difference between current and previous histogram
-                            for the Red colour channel
+    Returns
+    -------
+    bool
+       Results of KS test; True for Null hypothesis (H0), False for Alternative
+       Hypothesis (H1).
+    
     '''
-    # # Evaluate CDF of each colour channel for current frame
-    # curr_cdf_b = np.cumsum(curr_hist[:, 0]) / 256
-    # curr_cdf_g = np.cumsum(curr_hist[:, 1]) / 256
-    # curr_cdf_r = np.cumsum(curr_hist[:, 2]) / 256
+    # TODO: Dynamic range (?)
+    # Initialize array to store KS test results for each channel
+    signCrit = np.zeros(3, dtype=np.float32)
     
-    # # Evaluate CDF of each colour channel for previous frame
-    # prev_cdf_b = np.cumsum(prev_hist[:, 0]) / 256
-    # prev_cdf_g = np.cumsum(prev_hist[:, 1]) / 256
-    # prev_cdf_r = np.cumsum(prev_hist[:, 2]) / 256
-    
-    # # Evaluate difference for Blue colour channel
-    # Tks_b = np.max(np.abs(curr_cdf_b - prev_cdf_b))
-    
-    # # Evaluate difference for Green colour channel
-    # Tks_g = np.max(np.abs(curr_cdf_g - prev_cdf_g))
-    
-    # # Evaluate difference for Red colour channel
-    # Tks_r = np.max(np.abs(curr_cdf_r - prev_cdf_r))
-    
-    # Initialize array to store KS results
-    signCrit = np.zeros((1, 3), dtype=np.float32)
-    
-    # Evaluate KS Test for each colour channel
+    # Evaluate CDF of each colour channel for current & past frames
     for i in range(3):
-        signCrit[i] = ks_2samp(curr_hist[:, i], prev_hist[:, i])
+        curr_cdf = np.cumsum(curr_hist[:, i]) / 256
+        
+        prev_cdf = np.cumsum(prev_hist[:, i]) / 256
+        
+        # Evaluate KS test for current colour channel
+        signCrit[i] = np.max(np.abs(curr_cdf - prev_cdf))
     
-    # If Null Hypothesis true
+    # Null Hypothesis true
     if signCrit.all() < 0.01:
         return True
-    # If Alternative Hypothesis true
+    # Alternative Hypothesis true
     else:
         return False
 
