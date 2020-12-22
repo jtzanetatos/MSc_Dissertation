@@ -3,7 +3,7 @@
 """
 
 import numpy as np
-from scipy.stats import norm, entropy, kstest
+from scipy.stats import entropy
 
 # --------------------------------------------------------------------------- #
 # Implement adaptive windows of interest by means of KS statistical test
@@ -30,14 +30,15 @@ def KSAdaptiveWindows(final_win_vals, final_win_loc, hist_norm,
     
     '''
     # If all colour channels present
-    if np.logical_and.reduce((np.any(final_win_loc[:, 0]) != 0,
-                              np.any(final_win_loc[:, 1]) != 0,
-                              np.any(final_win_loc[:, 2]) != 0)):
-        
-        # TODO: KS Test from scipy here
+    if np.any(final_win_loc[:, 0]) != 0 and np.any(final_win_loc[:, 1]) != 0 \
+                              and np.any(final_win_loc[:, 2]) != 0:
+        # KS Significance test
+        signCrit = KSTest(sigWind)
         
         # If Alternative Hypothesis (H1) true
-        if Tks_r >= 0.5 and Tks_g >= 0.5 and Tks_b >= 0.5:
+        if ( signCrit[0] >= 0.5 and
+             signCrit[1] >= 0.5 and
+             signCrit[2] >= 0.5):
             
             # TODO: Utilize alternative hypothesis function
             
@@ -48,14 +49,15 @@ def KSAdaptiveWindows(final_win_vals, final_win_loc, hist_norm,
             # TODO: NULL Hypothesis call
             
     # Determine if Blue channel is present
-    if np.any(final_win_loc[:, 0]) != 0:
+    if np.sum(final_win_loc[:, 0]) > 0:
         # Check if Red & Blue channels present only
-        if np.any(final_win_loc[:, 2]) != 0:
+        if np.sum(final_win_loc[:, 2]) > 0:
             
-            # TODO: KS Test from scipy here
+            # KS Significance test
+            signCrit = KSTest(sigWind)
             
             # If Alternative Hypothesis (H1) true
-            if Tks_r >= 0.5 and Tks_b >= 0.5:
+            if signCrit.all() >= 0.5:
                 
                 # TODO: Utilize alternative hypothesis function
                 
@@ -66,12 +68,14 @@ def KSAdaptiveWindows(final_win_vals, final_win_loc, hist_norm,
                 
         
         # Check if Blue & Green channels are present
-        elif np.any(final_win_loc[:, 1]) != 0:
+        elif np.sum(final_win_loc[:, 1]) > 0:
             
-            # TODO: KS Test from scipy here
+            # KS Significance test
+            signCrit = KSTest(sigWind)
             
             # If Alternative Hypothesis (H1) true
-            if Tks_g >= 0.5 and Tks_b >= 0.5:
+            if ( signCrit[0] >= 0.5 and
+                 signCrit[1] >= 0.5 ):
                 
                 # TODO: Utilize alternative hypothesis function
                 
@@ -84,10 +88,11 @@ def KSAdaptiveWindows(final_win_vals, final_win_loc, hist_norm,
         # If only Blue Channel present
         else:
             
-            # TODO: KS Test from scipy here
+            # KS Significance test
+            signCrit = KSTest(sigWind)
             
             # If Alternative Hypothesis (H1) true
-            if Tks_b >= 0.5:
+            if signCrit >= 0.5:
                 
                 # TODO: Utilize alternative hypothesis function
                 
@@ -97,14 +102,16 @@ def KSAdaptiveWindows(final_win_vals, final_win_loc, hist_norm,
                 # TODO: NULL Hypothesis call
                 
     # If Green Channel present
-    elif np.any(final_win_loc[:, 1]) != 0:
+    elif np.sum(final_win_loc[:, 1]) > 0:
         # If Green & Blue channels present
-        if np.any(final_win_loc[:, 0]) != 0:
+        if np.sum(final_win_loc[:, 0]) > 0:
             
-            # TODO: KS Test from scipy here
+            # KS Significance test
+            signCrit = KSTest(sigWind)
             
             # If Alternative Hypothesis (H1) true
-            if Tks_g >= 0.5 and Tks_b >= 0.5:
+            if ( signCrit[0] >= 0.5 and
+                 signCrit[1] >= 0.5 ):
                 
                 # TODO: Utilize alternative hypothesis function
                 
@@ -114,12 +121,14 @@ def KSAdaptiveWindows(final_win_vals, final_win_loc, hist_norm,
                 # TODO: NULL Hypothesis call
                 
         # If Green & Red channels present
-        elif np.any(final_win_loc[:, 2]) != 0:
+        elif np.sum(final_win_loc[:, 2]) > 0:
             
-            # TODO: KS Test from scipy here
+            # KS Significance test
+            signCrit = KSTest(sigWind)
             
             # If Alternative Hypothesis (H1) true
-            if Tks_r >= 0.5 and Tks_g >= 0.5:
+            if ( signCrit[0] >= 0.5 and
+                 signCrit[1] >= 0.5 ):
                 
                 # TODO: Utilize alternative hypothesis function
                 
@@ -131,10 +140,11 @@ def KSAdaptiveWindows(final_win_vals, final_win_loc, hist_norm,
         # If Green Channel only
         else:
             
-            # TODO: KS Test from scipy here
+            # KS Significance test
+            signCrit = KSTest(sigWind)
             
             # If Alternative Hypothesis (H1) true
-            if Tks_g >= 0.5:
+            if signCrit >= 0.5:
                 
                 # TODO: Utilize alternative hypothesis function
                 
@@ -144,14 +154,16 @@ def KSAdaptiveWindows(final_win_vals, final_win_loc, hist_norm,
                 # TODO: NULL Hypothesis call
                 
     # If Red Chanel present
-    elif np.any(final_win_loc[:, 2]) != 0:
+    elif np.sum(final_win_loc[:, 2]) > 0:
         # If Red & Green Channels present
-        if np.any(final_win_loc[:, 1]) != 0:
+        if np.sum(final_win_loc[:, 1]) > 0:
             
-            # TODO: KS Test from scipy here
+            # KS Significance test
+            signCrit = KSTest(sigWind)
             
             # If Alternative Hypothesis (H1) true
-            if Tks_r >= 0.5 and Tks_g >= 0.5:
+            if ( signCrit[0] >= 0.5 and
+                 signCrit[1] >= 0.5 ):
                 
                 # TODO: Utilize alternative hypothesis function
                 
@@ -161,12 +173,14 @@ def KSAdaptiveWindows(final_win_vals, final_win_loc, hist_norm,
                 # TODO: NULL Hypothesis call
                 
         # If Red & Blue channels present
-        elif np.any(final_win_loc[:, 0]) != 0:
+        elif np.sum(final_win_loc[:, 0]) > 0:
             
-            # TODO: KS Test from scipy here
+            # KS Significance test
+            signCrit = KSTest(sigWind)
             
             # If Alternative Hypothesis (H1) true
-            if Tks_r >= 0.5 and Tks_b >= 0.5:
+            if ( signCrit[0] >= 0.5 and
+                 signCrit[1] >= 0.5 ):
                 
                 # TODO: Utilize alternative hypothesis function
                 
@@ -178,10 +192,11 @@ def KSAdaptiveWindows(final_win_vals, final_win_loc, hist_norm,
         # If only Red channel present
         else:
             
-            # TODO: KS Test from scipy here
+            # KS Significance test
+            signCrit = KSTest(sigWind)
             
             # If Alternative Hypothesis (H1) true
-            if Tks_r >= 0.5:
+            if signCrit >= 0.5:
                 
                 # TODO: Utilize alternative hypothesis function
                 
