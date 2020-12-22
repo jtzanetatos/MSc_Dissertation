@@ -10,7 +10,7 @@ import numpy as np
 def KSTest(sigWind):
     '''
     Kolmogorov-Smirnoff test on sliding windows to determine significance on 
-    distribution.
+    distributions.
     
     Parameters
     ----------
