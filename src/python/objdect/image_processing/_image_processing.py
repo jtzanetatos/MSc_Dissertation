@@ -12,17 +12,24 @@ from sklearn.cluster import KMeans
 def kmeans_cv(frame, n_clusters):
     '''
     K-Means function that utilizes the already built-in function found in the
-    opencv library. In the current implementation, the k-means clustering alg-
-    orithm is utilized in order to separate potential present objects in the 
-    current frame. The algorithm utilizes the Kmeans++ initialization.
-    The criteria for the K-Means are defined as, max number of iterations set to
-    300, and the acceptable error rate is set to 1e-4.
+    opencv library. The k-means clustering algorithm is utilized in order to
+    separate potential present objects in the current frame. The algorithm 
+    utilizes the Kmeans++ initialization. The criteria for the K-Means are 
+    defined as, max number of iterations set to 300, and the acceptable error
+    rate is set to 1e-4.
     
-    Inputs:         frame: Current frame; can be any size or colour type
-                    
-                    n_clusters: Number of clusters for the algorithm to evaluate
-                    
-    Outputs:         res_frame: Resulting frame from the k-means algorithm
+    Parameters
+    ----------
+    frame : uint8 array
+        Input (background subtracted) frame.
+    n_clusters : uint
+        Number of clusters to segment input frame.
+    
+    Returns
+    -------
+    res_frame : uint8 array
+        Clustered frame.
+    
     '''
     # Define criteria
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 300, 1e-4)
@@ -53,27 +60,33 @@ def kmeans_cv(frame, n_clusters):
 def kmeans_sk(frame, n_clusters):
     '''
     K-Means function that utilizes the already built-in function found in the
-    scikit-learn library. In the current implementation, the k-means clustering
-    algorithm is utilized in order to separate potential present objects in the
-    current frame. This function utilizes the Kmeans++ initialization, as well
-    as 2 CPU cores for faster processing. The criteria for the k-means are
-    kept to their default values, which are 300 max iterations and acceptable
-    error rate of 1e-4.
+    scikit-learn library. The k-means clustering algorithm is utilized in 
+    order to separate potential present objects in the current frame. 
+    This function utilizes the Kmeans++ initialization. The criteria for 
+    the k-means are kept to their default values, which are 300 max iterations
+    and acceptable error rate of 1e-4.
     
-    Inputs:         frame: Current frame; can be any size or colour type
-                    
-                    n_clusters: Number of clusters for the algorithm to evaluate
-                    
-    Outputs:         res_frame: Resulting frame from the k-means algorithm
+    Parameters
+    ----------
+    frame : unit8 array
+        Input (background subtracted) frame.
+    n_clusters : int
+        Number of clusters to segment input frame.
+
+    Returns
+    -------
+    res_frame : uint8 array
+        Clustered frame.
+
     '''
     # Get image dimmentions
-    heigh, width, _ =  frame.shape
+    row, colm, chns=  frame.shape
     
     # Flatten image values for the k-means algorithm
-    inpt = np.reshape(frame, (width * heigh, 3))
+    inpt = np.reshape(frame, (row * colm, chns))
     
     # Initialize the k-means model
-    kmeans = KMeans(n_clusters, init='k-means++', n_jobs=-1)
+    kmeans = KMeans(n_clusters, init='k-means++')
     
     # Fit the input image into the model
     kmeans.fit(inpt)
@@ -82,21 +95,21 @@ def kmeans_sk(frame, n_clusters):
     labels = kmeans.predict(inpt)
     
     # Output separated objects into image
-    res_frame = np.zeros((heigh, width, 3), dtype=np.uint8)
+    res_frame = np.zeros((row, colm, chns), dtype=np.uint8)
     
     # Initialize label index
     label_idx = 0
     
     # Loop through image dimentions
-    for i in range(heigh):
-        for k in range(width):
+    for i in range(row):
+        for k in range(colm):
             # At each iteration, select the corresponding cluster center of each label
             res_frame[i, k] = kmeans.cluster_centers_[labels[label_idx]]
             # Update label index
             label_idx += 1
     
     # Return resulting frame
-    return(res_frame)
+    return res_frame
 
 
 # --------------------------------------------------------------------------- #
@@ -104,7 +117,7 @@ def kmeans_sk(frame, n_clusters):
 # --------------------------------------------------------------------------- #
 def frame_proc(frame, fgmask, kernel, contour_size):
     '''
-    Function that implements a number of morphological operations in order to 
+    Implemention of a number of morphological operations in order to 
     capture the contours of the detected objects (i.e. contours of interest)
     
     The function first perfoms an bitwise self addition of the input frame,
@@ -120,21 +133,26 @@ def frame_proc(frame, fgmask, kernel, contour_size):
     to draw the detected contours; the contours that are below of a threshold
     value are deleted.
     
-    Inputs:             frame: Input frame
+    Parameters
+    ----------
+    frame : uint8 array
+        Input frame.
+    fgmask : bool array
+        Background subtraction mask.
+    kernel : uint8
+        Morphological operations kernel size.
+    contour_size : uint8
+        Thershold of contour size to keep.
     
-                        fgmask: Evaluated mask for the current input frame
-                        
-                        kernel: Kernel of size 9x9
-                        
-                        contour_size: Threshold of accepted contours size,
-                                      defined as 60 pixels.
-                                      
-    Outputs:            res2: Output frame, masked with the morphological closing
-                              of input frame
-                              
-                        res: Frame that the contours are to be drawn.
-                        
-                        contours: The detected contous of current frame
+    Returns
+    -------
+    res2 : uint8 array
+        Foreground image.
+    res : 
+        Foreground image to draw contours.
+    contours : np.array
+        Contour locations.
+    
     '''
     # Self bitwise operation on current frame
     res = cv.bitwise_and(frame,frame, mask= fgmask)
