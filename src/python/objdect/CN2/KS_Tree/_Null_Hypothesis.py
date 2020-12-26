@@ -35,14 +35,16 @@ def NullHypothesis(CN2winLoc, histNorm, winLoc, signCrit):
     '''
     
     # Initialize index for Colour Channels
-    idx = 1
+    idx = 0
     cdx = 1
     while signCrit >= 5.0:
+        # Increase index value for next iteration
+        idx += 1
         # Begining of histogram values(first window)
         if CN2winLoc[0] == 0:
             if idx <= 15:
                 # Overlapping window expansion towards first element
-                temp_winVals = histNorm[np.abs(15 - idx):47]
+                temp_winVals = histNorm[15 - idx:47]
             else:
                 # Overlapping window expansion towards last element
                 temp_winVals = histNorm[0:47+cdx]
@@ -108,13 +110,25 @@ def NullHypothesis(CN2winLoc, histNorm, winLoc, signCrit):
                 # Evaluate CDF of current window
                 currCDF = np.cumsum(out_winVals)
                 
-                # Evaluate CDF of previous window
-                prevCDF = np.cumsum(histNorm[winLoc[elem-1, 0]-idx:
-                                             winLoc[elem-1, -1]+idx])
+                # Safeguard expansion for first window case
+                if elem-1 == 0:
+                    # Evaluate CDF of previous window
+                    prevCDF = np.cumsum(histNorm[winLoc[elem-1, 0]:
+                                                 winLoc[elem-1, -1]+(2*idx)])
+                else:
+                    # Evaluate CDF of previous window
+                    prevCDF = np.cumsum(histNorm[winLoc[elem-1, 0]-idx:
+                                                 winLoc[elem-1, -1]+idx])
                 
-                # Evaluate CDF of next window
-                nxtCDF = np.cumsum(histNorm[winLoc[elem+1, 0]-idx:
-                                             winLoc[elem+1, -1]+idx])
+                # Safeguard expansion for last slidding window
+                if elem+1 == winLoc.shape[0] - 1:
+                    # Evaluate CDF of next window
+                    nxtCDF = np.cumsum(histNorm[winLoc[elem+1, 0]-(2*idx):
+                                                winLoc[elem+1, -1]])
+                else:
+                    # Evaluate CDF of next window
+                    nxtCDF = np.cumsum(histNorm[winLoc[elem+1, 0]-idx:
+                                                winLoc[elem+1, -1]+idx])
                 
                 # Significance test on all windows
                 signCrit = np.max( ( np.abs(currCDF - prevCDF), 
@@ -129,7 +143,7 @@ def NullHypothesis(CN2winLoc, histNorm, winLoc, signCrit):
             # Expand at appropriate direction
             else:
                 # Expand at both directions
-                if dirIndex[0] > 5.0 and dirIndex[1] > 5.0:
+                if dirIndex[0] >= 5.0 and dirIndex[1] >= 5.0:
                     # Output window
                     out_winVals = histNorm[np.int(winLoc[elem, 0])
                                   -idx: np.int(winLoc[elem, -1]) + idx]
@@ -141,13 +155,25 @@ def NullHypothesis(CN2winLoc, histNorm, winLoc, signCrit):
                     # Evaluate CDF of current window
                     currCDF = np.cumsum(out_winVals)
                     
-                    # Evaluate CDF of previous window
-                    prevCDF = np.cumsum(histNorm[winLoc[elem-1, 0]-idx:
-                                                 winLoc[elem-1, -1]+idx])
+                    # Safeguard expansion for first window case
+                    if elem-1 == 0:
+                        # Evaluate CDF of previous window
+                        prevCDF = np.cumsum(histNorm[winLoc[elem-1, 0]:
+                                                     winLoc[elem-1, -1]+(2*idx)])
+                    else:
+                        # Evaluate CDF of previous window
+                        prevCDF = np.cumsum(histNorm[winLoc[elem-1, 0]-idx:
+                                                     winLoc[elem-1, -1]+idx])
                     
-                    # Evaluate CDF of next window
-                    nxtCDF = np.cumsum(histNorm[winLoc[elem+1, 0]-idx:
-                                                 winLoc[elem+1, -1]+idx])
+                    # Safeguard expansion for last slidding window
+                    if elem+1 == winLoc.shape[0] - 1:
+                        # Evaluate CDF of next window
+                        nxtCDF = np.cumsum(histNorm[winLoc[elem+1, 0]-(2*idx):
+                                                    winLoc[elem+1, -1]])
+                    else:
+                        # Evaluate CDF of next window
+                        nxtCDF = np.cumsum(histNorm[winLoc[elem+1, 0]-idx:
+                                                    winLoc[elem+1, -1]+idx])
                     
                     # Significance test on all windows
                     signCrit = np.max( ( np.abs(currCDF - prevCDF), 
@@ -160,7 +186,7 @@ def NullHypothesis(CN2winLoc, histNorm, winLoc, signCrit):
                     
                     dirIndex[1] = np.max(np.abs(currCDF - nxtCDF))
                 # Expant towards leftmost values
-                elif dirIndex[0] > 5.0 and dirIndex[1] <= 5.0:
+                elif dirIndex[0] >= 5.0 and dirIndex[1] < 5.0:
                     # Output window
                     out_winVals = histNorm[np.int(winLoc[elem, 0])
                                   -idx: np.int(winLoc[elem, -1])]
@@ -181,7 +207,7 @@ def NullHypothesis(CN2winLoc, histNorm, winLoc, signCrit):
                     
                     dirIndex[0] = np.max(np.abs(currCDF - prevCDF))
                 # Expand towards rightmost values
-                elif dirIndex[1] > 5.0 and dirIndex[0] <= 5.0:
+                elif dirIndex[1] >= 5.0 and dirIndex[0] < 5.0:
                     # Output window
                     out_winVals = histNorm[np.int(winLoc[elem, 0])
                                   : np.int(winLoc[elem, -1]) + idx]
@@ -195,14 +221,11 @@ def NullHypothesis(CN2winLoc, histNorm, winLoc, signCrit):
                     
                     # Evaluate CDF of next window
                     nxtCDF = np.cumsum(histNorm[winLoc[elem+1, 0]-idx:
-                                                 winLoc[elem+1, -1]])
+                                                winLoc[elem+1, -1]])
                     
                     # Significance test on all windows
                     signCrit = np.max(np.abs(currCDF - nxtCDF))
                     
                     dirIndex[1] = np.max(np.abs(currCDF - nxtCDF))
-        
-        # Increase index value for next iteration
-        idx += 1
     # Return resulting windows
     return out_winVals, out_winLoc
