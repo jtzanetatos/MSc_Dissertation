@@ -4,12 +4,12 @@
 
 import numpy as np
 from scipy.stats import entropy
-
+from .KS_Tree import KSAdaptiveWindows
 
 # --------------------------------------------------------------------------- #
 # Implement Rule Based Tree on RGB/Grayscale Windows
 # --------------------------------------------------------------------------- #
-def CN2(win_vals, win_binloc):
+def CN2(win_vals, win_binloc, histNorm):
     '''
     Implementation of a rule based decision tree, in order to find regions of
     interest, and determine number of clusters.
@@ -290,9 +290,11 @@ def CN2(win_vals, win_binloc):
                 
                 wind_bins[i] = temp_bins
     # Return resulting arrays
-    return wind_vals, wind_bins
+    # return wind_vals, wind_bins
+    ksVals, ksLoc = KSAdaptiveWindows(wind_vals, wind_bins, 
+                                      histNorm, win_vals, win_binloc)
 
-def CN2Entropy(win_vals, win_binloc):
+def CN2Entropy(win_vals, win_binloc, histNorm):
     '''
     Implementation of a rule based decision tree, in order to find regions of
     interest, and determine number of clusters.
@@ -429,4 +431,7 @@ def CN2Entropy(win_vals, win_binloc):
                 wind_bins[i] = temp_bins
                 
     # Return resulting arrays
-    return wind_vals, wind_bins
+    # return wind_vals, wind_bins
+    ksVals, ksLoc = KSAdaptiveWindows(wind_vals, wind_bins, 
+                                      histNorm, win_vals, win_binloc)
+    return ksVals, ksLoc
