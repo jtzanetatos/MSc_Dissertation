@@ -2,7 +2,7 @@
 """
 """
 
-from ._KS_Tree import KSAdaptiveWindows
+from ._KS_tree import KSAdaptiveWindows
 
 __all__ = [
     'KSAdaptiveWindows',

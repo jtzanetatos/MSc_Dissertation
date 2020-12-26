@@ -9,18 +9,23 @@ import cv2 as cv
 # --------------------------------------------------------------------------- #
 def ListSensors():
     '''
-    Function that prompts user to choose camera.
-    In its current implementation, it is limited to returing only two possible
-    options.
+    Returns corresponding visual sensor to utilize.
     
-    Input: available cameras list
-    Output: Valid user choise
+    Returns
+    -------
+    list
+        indices of available visual sensors.
+    
     '''
     def detectSources():
         '''
-        Function that detects any available camera.
-        Input: max value of index integer number
-        Output: list of available cameras currently connected.
+        Probes for all available visual sensors & returns sensor indices
+        
+        Returns
+        -------
+        avail_cams : list
+            Indices of available visual sensors.
+        
         '''
         # Initialize list to store available sensors indices
         avail_cams = []
