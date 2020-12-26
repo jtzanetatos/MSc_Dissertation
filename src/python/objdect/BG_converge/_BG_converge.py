@@ -3,6 +3,7 @@
 """
 
 import numpy as np
+from sklearn.preprocessing import minmax_scale
 
 # --------------------------------------------------------------------------- #
 # Kolmogorov-Sminrov Statistical Test to converge MOG2
@@ -10,9 +11,9 @@ import numpy as np
 def KSMoG2(curr_hist, prev_hist):
     '''
     Kolmogorov-Smirnov Statistical test for MOG2 convergence.
-    The current function evaluates the Cumulative Densities Functions
-    of current & previous frame's histograms. Depending upon the results of
-    the function, the MOG2 algorithm will either continue, or stop(e.g. converged).
+    Evaluates the Cumulative Densities Functions (CDF) of current & previous
+    frame's histograms. Depending upon the results, the MOG2 algorithm will
+    either continue, or stop(e.g. converged).
     
     Alternative hypothesis (H1) is defined as histograms do not overlap significantly,
     therefore the MOG2 algorithm has not converged yet.
@@ -25,7 +26,7 @@ def KSMoG2(curr_hist, prev_hist):
     curr_hist : float 32 2D array
         Histogram of current frame.
     prev_hist : float 32 2D array
-        N-10 frame's histogram.
+        N-10th frame's histogram.
     
     Returns
     -------
@@ -34,21 +35,20 @@ def KSMoG2(curr_hist, prev_hist):
        Hypothesis (H1).
     
     '''
-    # TODO: Dynamic range (?)
     # Initialize array to store KS test results for each channel
     signCrit = np.zeros(3, dtype=np.float32)
     
     # Evaluate CDF of each colour channel for current & past frames
     for i in range(3):
-        curr_cdf = np.cumsum(curr_hist[:, i]) / 256
+        curr_cdf = np.cumsum(minmax_scale(curr_hist[:, i]))
         
-        prev_cdf = np.cumsum(prev_hist[:, i]) / 256
+        prev_cdf = np.cumsum(minmax_scale(prev_hist[:, i]))
         
         # Evaluate KS test for current colour channel
         signCrit[i] = np.max(np.abs(curr_cdf - prev_cdf))
     
     # Null Hypothesis true
-    if signCrit.all() < 0.01:
+    if ( signCrit[0] < 1.0 and signCrit[1] < 1.0 and signCrit[2] < 1.0):
         return True
     # Alternative Hypothesis true
     else:
@@ -61,19 +61,25 @@ def KSMoG2(curr_hist, prev_hist):
 # -------------------------------------------------------------------------- #
 def HistDeviation(out_win_vals):
     '''
-    Function that evaluates the deviation of each resulting adaptive window,
-    in order to evaluate if the MOG2 algorithm needs to converge or to continue.
-    The function identifies the useful windows and evaluates its deviation.
+    Evaluation the deviation of each resulting adaptive window, in order to
+    evaluate if the MOG2 algorithm needs to converge or to continue. 
+    Identifies the useful windows and evaluates its deviation.
     Useful windows are defined as the windows that contain values.
     
-    Inputs:           out_win_vals: A 3d array of unkown size, containing the 
-                                    values of the resulting adaptive windows.
+    Parameters
+    ----------
+    out_win_vals : np.array
+        Adaptive window values.
     
-    Outputs:          True if the majority of the deviations are greater than 
-                      the threshold value, defined as 0.21.
-                      
-                      False if the majority of the deviations are less than the
-                      threshold value.
+    Returns
+    -------
+    bool
+        True if the majority of the deviations are greater than the 
+        threshold value, defined as 0.21.
+        
+        False if the majority of the deviations are less than the
+        threshold value.
+    
     '''
     try:
         # Obtain dimmentions of input array
