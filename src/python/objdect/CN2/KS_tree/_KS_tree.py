@@ -53,7 +53,7 @@ def KSAdaptiveWindows(CN2winVals, CN2winLoc, histNorm, winVals, winLoc):
     # Iterate over colour channels
     for i in range(len(CN2winVals)):
         # Current colour channel present
-        if CN2winLoc is not None:
+        if CN2winLoc[i] is not None:
             # Initialize nested array to store arrays - window values
             outWinvals = np.zeros(CN2winLoc[i].shape[0], dtype=np.object)
             
