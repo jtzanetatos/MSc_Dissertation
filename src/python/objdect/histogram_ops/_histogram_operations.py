@@ -10,7 +10,7 @@ from sklearn.preprocessing import minmax_scale
 # --------------------------------------------------------------------------- #
 def KernelsHist(frame):
     '''
-    Function that evaluates the kernels of interest for the input frame and
+    Evaluation of the kernels of interest for the input frame and
     outputs the histogram of each colour channel that remains.
     
     Kernels size: 3x3
@@ -190,7 +190,7 @@ def KernelsHist(frame):
 # --------------------------------------------------------------------------- #
 def HistBpf(hist):
     '''
-    Function that implements a Band Pass FIR filter in order to suppress the 
+    Implementation of a Band Pass FIR filter in order to suppress the 
     potential effects of the number of zero pixels has on the histograms.
     
     Since background subtraction/foreground detection occurs, it is expected that
@@ -344,25 +344,21 @@ def HistNorm(filt_hist):
 # ------------------------------------------------------------------------- #
 def HistWindows(hist_norm):
     '''
-    Function that implements plain & overlapping windows containing values
+    Implementation of slidding windows containing values
     of each colour channel's histograms.
     
-    Input:         hist_norm: An array of size 256x3 that contains the histograms
-                              of each colour channel. In the current implementation
-                              it is optimal for the histogram values to be normalized.
+    Parameters
+    ----------
+    hist_norm : float32 array
+        Normalized histogram of input frame.
     
-    Outputs:       win_vals: An array of size (8, 32, 3) that contains the values
-                             of the input histograms.
-                   
-                   win_binloc: An array of size (8, 32, 3) that contains the bin
-                               locations of the correspondig plain values.
-                               
-                   over_vals: An array of size (8, 32, 3) that contains the values
-                              of the input histograms in an overlapping manner,
-                              starting from the 15th element.
-                   
-                   over_binloc: An array of size(8, 32, 3) that contains the bin
-                                locations of the corresponding overlapping values
+    Returns
+    -------
+    win_vals : float32 array
+        Slidding window values of input histogram.
+    win_binloc : uint8 array
+        Slidding window locations of input histogram.
+    
     '''
     # Enumerate histogram bins
     bin_c = np.arange(0, 256, dtype=np.uint8)
@@ -382,18 +378,23 @@ def HistWindows(hist_norm):
         win_binloc = np.zeros((15, 32), dtype=np.uint8)
         
         # Loop through every window
-        for i in range(32, 256, 32):
+        for i in range(0, 256, 32):
             # Plain window values
-            win_vals[idx, :] = hist_norm[i-32:i]
+            win_vals[idx, :] = hist_norm[i:i+32]
             
             # Plain window locations
-            win_binloc[idx, :] = bin_c[i-32:i]
+            win_binloc[idx, :] = bin_c[i:i+32]
             
-            # Overlapping window values
-            win_vals[idx+1, :] = hist_norm[i-16:i+16]
-            
-            # Overlapping window locations
-            win_binloc[idx+1, :] = bin_c[i-16:i+16]
+            # First overlapping window
+            if i == 0:
+                win_vals[idx+1, :] = hist_norm[32-16:32+16]
+            # Rest of overlapping windows
+            elif 256 - i > 32:
+                # Overlapping window values
+                win_vals[idx+1, :] = hist_norm[i+32-16:i+32+16]
+                
+                # Overlapping window locations
+                win_binloc[idx+1, :] = bin_c[i+32-16:i+32+16]
             
             # Update array index
             idx += 2
@@ -404,24 +405,34 @@ def HistWindows(hist_norm):
         win_vals = np.zeros((15, 32, 3), dtype=np.float32)
         
         # Initialize windows locations
-        win_binloc = np.zeros((15, 32, 3), dtype=np.uint8)
+        win_binloc = np.zeros((15, 32), dtype=np.uint8)
         
         # Iterate over each colour channel
         for c in range(colm):
             # Loop through every window
-            for i in range(32, row, 32):
+            for i in range(0, row, 32):
+                # Populate bin locations
+                if c == 0:
+                    # Plain window locations
+                    win_binloc[idx, :] = bin_c[i:i+32]
+                    
+                    # First overlapping window's locations
+                    if i == 0:
+                        win_binloc[idx+1, :] = bin_c[32-16:32+16]
+                    # Rest of overlapping windows locations
+                    elif row - i > 32:
+                        # Overlapping window locations
+                        win_binloc[idx+1, :] = bin_c[i+32-16:i+32+16]
+                
                 # Plain window values
-                win_vals[idx, :, c] = hist_norm[i-32:i, c]
-                
-                # Plain window locations
-                win_binloc[idx, :, c] = bin_c[i-32:i]
-                
-                # Overlapping window values
-                win_vals[idx+1, :, c] = hist_norm[i-16:i+16, c]
-                
-                # Overlapping window locations
-                win_binloc[idx+1, :, c] = bin_c[i-16:i+16]
-                
+                win_vals[idx, :] = hist_norm[i:i+32]
+                # First overlapping window
+                if i == 0:
+                    win_vals[idx+1, :, c] = hist_norm[32-16:32+16, c]
+                # Rest of overlapping windows
+                elif row - i > 32:
+                    # Overlapping window values
+                    win_vals[idx+1, :, c] = hist_norm[i+32-16:i+32+16, c]
                 # Update array index
                 idx += 2
                 
