@@ -5,130 +5,204 @@
 import numpy as np
 
 
-# TODO: This function RETURNS Adaptive windows!!,
-# DO NOT EXPAND IN UNITY! EACH CHANNEL MUST EXPAND INDEPENDENTLY!!!
-# Return array of arrays to avoid padding
-# Function needs to determine which channels are present
-def NullHypothesis(final_win_loc, final_win_vals):
+def NullHypothesis(CN2winLoc, histNorm, winLoc, signCrit):
+    '''
+    Null Hypothesis of the KS significance test between input window derived
+    from CN2 tree & its adjacent slidding windows.
+    
+    Null Hypothesis is defined as the shape of input window & its adjacent
+    windows overlap, therefore the current window expands accordingly
+    untill they no longer overlap significantly.
+    
+    Parameters
+    ----------
+    CN2winLoc : uint8 array
+        Resulting window locations from CN2 tree.
+    histNorm : float32 array
+        Normalized histogram of input frame.
+    winLoc : uint8 array
+        Slidding windows locations of input frame's histogram.
+    signCrit : float32
+        KS significance test result.
+    
+    Returns
+    -------
+    out_winVals : float32 array
+        Resulting expanded window values.
+    out_winLoc : uint8 array
+        Resulting expanded window locations.
+    
+    '''
     
     # Initialize index for Colour Channels
     idx = 1
     cdx = 1
-    while Tks_r < 0.5 or Tks_g < 0.5 or Tks_b < 0.5:
-        
-        # Initialize arrays to expand Channel values
-        temp_win = np.zeros((32 + idx, 3), dtype=np.float32)
-        temp_over = np.zeros((32 + idx, 3), dtype=np.float32)
-        
-        # If at begining of histogram values(first window)
-        if np.logical_or.reduce((final_win_loc[0, 2] == 0 ,
-                                 final_win_loc[0, 1] == 0,
-                                 final_win_loc[0, 0] == 0)):
+    while signCrit > 5.0:
+        # Begining of histogram values(first window)
+        if CN2winLoc[0] == 0:
             if idx <= 15:
-                # Red Channel Windows
-                temp_win[:, 2] = hist_norm[0:32+idx, 2]
-                temp_over[:, 2] = hist_norm[np.abs(15 - idx):47, 2]
-                
-                # Green channel Windows
-                temp_win[:, 1] = hist_norm[0:32+idx, 1]
-                temp_over[:, 1] = hist_norm[np.abs(15 - idx):47, 1]
-                
-                # Blue Channel WIndows
-                temp_win[:, 0] = hist_norm[0:32+idx, 0]
-                temp_over[:, 0] = hist_norm[np.abs(15 - idx):47, 0]
+                # Overlapping window expansion towards first element
+                temp_winVals = histNorm[np.abs(15 - idx):47]
             else:
-                # Red Channel Windows
-                temp_win[:, 2] = hist_norm[0:32+idx, 2]
-                temp_over[:, 2] = hist_norm[0:47+cdx, 2]
-                
-                # Green channel Windows
-                temp_win[:, 1] = hist_norm[0:32+idx, 1]
-                temp_over[:, 1] = hist_norm[0:47+cdx, 1]
-                
-                # Blue Channel WIndows
-                temp_win[:, 0] = hist_norm[0:32+idx, 0]
-                temp_over[:, 0] = hist_norm[0:47+cdx, 0]
+                # Overlapping window expansion towards last element
+                temp_winVals = histNorm[0:47+cdx]
                 # Increment index
                 cdx += 1
+            # Output window expansion
+            out_winVals = histNorm[0:32+idx]
             
-        # If at the end of histogram values (last window)
-        elif np.logical_or.reduce((final_win_loc[0, 2] == 224 ,
-                                   final_win_loc[0, 1] == 224,
-                                   final_win_loc[0, 0] == 224,
-                                   final_win_loc[0, 0] == 239,
-                                   final_win_loc[0, 1] == 239,
-                                   final_win_loc[0, 2] == 239)):
-            # Red Channel Windows
-            temp_win[:, 2] = hist_norm[np.int(win_binloc[0, 2]) 
-                              -idx: np.int(win_binloc[-1, 2])+1, 2]
+            # Output window locations
+            out_winLoc = np.arange(0, 32+idx, dtype=np.uint8)
             
-            # Pad zeros to the end of the window
-            temp_over[:, 2] = np.pad(hist_norm[over_binloc[0,2] 
-            - 1: over_binloc[16,2]+1, 2], 
-            (0, (len(temp_over) - (len(hist_norm[over_binloc[0,2]
-            - 1: over_binloc[16,2]+1, 2])))), 'constant')
+            # Evaluate CDF of input window
+            plainCDF = np.cumsum(out_winVals)
             
+            # Evaluate CDF of overlapping window
+            overCDF = np.cumsum(temp_winVals)
             
-            # Green Channel Windows
-            temp_win[:, 1] = hist_norm[np.int(win_binloc[0, 1])
-                              -idx: np.int(win_binloc[-1, 1])+1, 1]
+            # Significance test on two windows
+            signCrit = np.max(np.abs(plainCDF - overCDF))
+        # End of histogram values (last window)
+        elif CN2winLoc[0] == 224:
+            # Break when at limits of window
+            if winLoc[-2, -1] + idx == 255:
+                break
+            # Input Channel Windows
+            out_winVals = histNorm[np.int(winLoc[-1, 0])
+                              -idx: np.int(winLoc[-1, -1])]
             
-            # Pad zeros to the end of the window
-            temp_over[:, 1] = np.pad(hist_norm[np.int(over_binloc[ 0, 1])
-                               -idx : np.int(over_binloc[16, 1])+1, 1],
-            (0, len(temp_over) - len(hist_norm[np.int(over_binloc[ 0, 1])
-                               -idx : np.int(over_binloc[16, 1])+1, 1])),
-            'constant')
+            # Overlapping window values
+            temp_winVals = histNorm[np.int(winLoc[-2, 0]):
+                                    np.int(winLoc[-2, -1]) + idx]
             
-            # Blue Channel Windows
-            temp_win[:, 0] = hist_norm[np.int(win_binloc[0, 0])
-                              -idx: np.int(win_binloc[-1, 0])+1, 0]
+            # Output window locations
+            out_winLoc = np.arange(winLoc[-1, 0]-idx,
+                                   winLoc[-1, -1], dtype=np.uint8)
             
-            # Pad zeros to the end of the window
-            temp_over[:, 0] = np.pad(hist_norm[np.int(over_binloc[ 0, 0])
-                               -idx : np.int(over_binloc[16, 0])+1, 0],
-            (0, len(temp_over) - len(hist_norm[np.int(over_binloc[ 0, 0])
-                               -idx : np.int(over_binloc[16, 0])+1, 0])),
-            'constant')
+            # Evaluate CDF of input window
+            plainCDF = np.cumsum(out_winVals)
+            
+            # Evaluate CDF of overlapping window
+            overCDF = np.cumsum(temp_winVals)
+            
+            # Significance test on two windows
+            signCrit = np.max(np.abs(plainCDF - overCDF))
+        # Other cases
         else:
-            # TODO: Implement validation check for both ends of histogram
-            # Red Channel Windows
-            temp_win[:, 2] = hist_norm[np.int(win_binloc[0, 2])
-                       : np.int(win_binloc[-1, 2]) + idx, 2]
+            # Locate window
+            elem = np.where(CN2winLoc[0] == winLoc[:, 0])
+            # Break when at limits of window
+            if ( winLoc[-2, -1] + idx == 255 or
+                winLoc[-2, -1] - idx == 0 ):
+                break
             
-            temp_over[:, 2] = hist_norm[np.int(over_binloc[i, 0, 2])
-                           -idx : np.int(over_binloc[-1, 2]), 2]
-            
-            # Green Channel Windows
-            temp_win[:, 1] = hist_norm[np.int(win_binloc[0, 1])
-                       : np.int(win_binloc[-1, 1]) + idx, 1]
-            
-            temp_over[:, 1] = hist_norm[np.int(over_binloc[0, 1])
-                        -idx : np.int(over_binloc[-1, 1]), 1]
-            
-            # Blue Channel Windows
-            temp_win[:, 0] = hist_norm[np.int(win_binloc[0, 0])
-                       : np.int(win_binloc[-1, 0]) + idx, 0]
-            
-            temp_over[:, 0] = hist_norm[np.int(over_binloc[0, 0])
-                        -idx : np.int(over_binloc[-1, 0]), 0]
-            
-        # Re Evaluate Red channel
-        ur = temp_win[:, 2] / len(temp_win)
-        vr = temp_over[:, 2] / len(temp_over)
-        Tks_r = np.max(np.abs(ur - vr))
-        
-        # Re Evaluate Green channel
-        ug = temp_win[:, 1] / len(temp_win)
-        vg = temp_over[:, 1] / len(temp_over)
-        Tks_g = np.max(np.abs(ug - vg))
-        
-        # Re Evaluate Blue Channel
-        ub = temp_win[:, 0] / len(temp_win)
-        vb = temp_over[:, 0] / len(temp_over)
-        Tks_b = np.max(np.abs(ub - vb))
+            # Check direction to expand
+            if idx == 1:
+                # Output window
+                out_winVals = histNorm[np.int(winLoc[elem, 0])
+                              -idx: np.int(winLoc[elem, -1]) + idx]
+                
+                # Output window locations
+                out_winLoc = np.arange(winLoc[elem, 0]-idx,
+                                   winLoc[elem, -1]+idx, dtype=np.uint8)
+                # Evaluate CDF of current window
+                currCDF = np.cumsum(out_winVals)
+                
+                # Evaluate CDF of previous window
+                prevCDF = np.cumsum(histNorm[winLoc[elem-1, 0]:
+                                             winLoc[elem-1, -1]+idx])
+                
+                # Evaluate CDF of next window
+                nxtCDF = np.cumsum(histNorm[winLoc[elem+1, 0]-idx:
+                                             winLoc[elem+1, -1]])
+                
+                # Significance test on all windows
+                signCrit = np.max( ( np.abs(currCDF - prevCDF), 
+                                        np.abs(currCDF - nxtCDF) ) )
+                
+                # Significance test results on both sets of comparison
+                dirIndex = np.zeros(2, dtype=np.float32)
+                
+                dirIndex[0] = np.max(np.abs(currCDF - prevCDF))
+                
+                dirIndex[1] = np.max(np.abs(currCDF - nxtCDF))
+            # Expand at appropriate direction
+            else:
+                # Expand at both directions
+                if dirIndex[0] > 5.0 and dirIndex[1] > 5.0:
+                    # Output window
+                    out_winVals = histNorm[np.int(winLoc[elem, 0])
+                                  -idx: np.int(winLoc[elem, -1]) + idx]
+                    
+                    # Output window locations
+                    out_winLoc = np.arange(winLoc[elem, 0]-idx,
+                                   winLoc[elem, -1]+idx, dtype=np.uint8)
+                    
+                    # Evaluate CDF of current window
+                    currCDF = np.cumsum(out_winVals)
+                    
+                    # Evaluate CDF of previous window
+                    prevCDF = np.cumsum(histNorm[winLoc[elem-1, 0]:
+                                                 winLoc[elem-1, -1]+idx])
+                    
+                    # Evaluate CDF of next window
+                    nxtCDF = np.cumsum(histNorm[winLoc[elem+1, 0]-idx:
+                                                 winLoc[elem+1, -1]])
+                    
+                    # Significance test on all windows
+                    signCrit = np.max( ( np.abs(currCDF - prevCDF), 
+                                            np.abs(currCDF - nxtCDF) ) )
+                    
+                    # Significance test results on both sets of comparison
+                    dirIndex = np.zeros(2, dtype=np.float32)
+                    
+                    dirIndex[0] = np.max(np.abs(currCDF - prevCDF))
+                    
+                    dirIndex[1] = np.max(np.abs(currCDF - nxtCDF))
+                # Expant towards leftmost values
+                elif dirIndex[0] > 5.0 and dirIndex[1] <= 5.0:
+                    # Output window
+                    out_winVals = histNorm[np.int(winLoc[elem, 0])
+                                  -idx: np.int(winLoc[elem, -1])]
+                    
+                    # Output window locations
+                    out_winLoc = np.arange(winLoc[elem, 0]-idx,
+                                   winLoc[elem, -1], dtype=np.uint8)
+                    
+                    # Evaluate CDF of current window
+                    currCDF = np.cumsum(out_winVals)
+                    
+                    # Evaluate CDF of previous window
+                    prevCDF = np.cumsum(histNorm[winLoc[elem-1, 0]:
+                                                 winLoc[elem-1, -1]+idx])
+                    
+                    # Significance test on all windows
+                    signCrit = np.max(np.abs(currCDF - prevCDF))
+                    
+                    dirIndex[0] = np.max(np.abs(currCDF - prevCDF))
+                # Expand towards rightmost values
+                elif dirIndex[1] > 5.0 and dirIndex[0] <= 5.0:
+                    # Output window
+                    out_winVals = histNorm[np.int(winLoc[elem, 0])
+                                  : np.int(winLoc[elem, -1]) + idx]
+                    
+                    # Output window locations
+                    out_winLoc = np.arange(winLoc[elem, 0],
+                                   winLoc[elem, -1]+idx, dtype=np.uint8)
+                    
+                    # Evaluate CDF of current window
+                    currCDF = np.cumsum(histNorm[CN2winLoc])
+                    
+                    # Evaluate CDF of next window
+                    nxtCDF = np.cumsum(histNorm[winLoc[elem+1, 0]-idx:
+                                                 winLoc[elem+1, -1]])
+                    
+                    # Significance test on all windows
+                    signCrit = np.max(np.abs(currCDF - nxtCDF))
+                    
+                    dirIndex[1] = np.max(np.abs(currCDF - nxtCDF))
         
         # Increase index value for next iteration
         idx += 1
-    
     # Return resulting windows
+    return out_winVals, out_winLoc
