@@ -3,7 +3,6 @@
 """
 
 import numpy as np
-from sklearn.preprocessing import minmax_scale
 
 # --------------------------------------------------------------------------- #
 # Kolmogorov-Sminrov Statistical Test to converge MOG2
@@ -40,9 +39,9 @@ def KSMoG2(curr_hist, prev_hist):
     
     # Evaluate CDF of each colour channel for current & past frames
     for i in range(3):
-        curr_cdf = np.cumsum(minmax_scale(curr_hist[:, i]))
+        curr_cdf = np.cumsum(curr_hist[:, i])
         
-        prev_cdf = np.cumsum(minmax_scale(prev_hist[:, i]))
+        prev_cdf = np.cumsum(prev_hist[:, i])
         
         # Evaluate KS test for current colour channel
         signCrit[i] = np.max(np.abs(curr_cdf - prev_cdf))
