@@ -36,7 +36,11 @@ def ClusterEstimator(ksLoc):
         locInd = np.zeros(len(nChns), dtype=np.object)
         
         # Initialize array to track number of windows of each colour channel
-        maxWin = np.zeros(len(nChns), dtype=np.uint8)
+        maxWin = np.zeros(len(nChns), dtype=np.int8)
+        
+        # Initialize array to track width of windows of current colour channel
+        chnWidth = np.zeros(len(nChns), dtype=np.int16)
+        
         # Iterate over colour channels
         for i in nChns:
             # Find colour channel with most windows
@@ -44,12 +48,20 @@ def ClusterEstimator(ksLoc):
             # Initialize array to store first index of each window
             currInd = np.zeros(len(ksLoc[i]), dtype=np.object)
             
+            # Initialize array to track width of windows of current colour channel
+            currWidth = np.zeros(len(ksLoc[i]), dtype=np.int16)
+            
             # Iterate over windows
             for k in range(len(ksLoc[i])):
+                # Find greater channel width
+                currWidth[k] = len(ksLoc[i][k])
                 # Track first location element
-                currInd[k] = ksLoc[i][k][0]
+                currInd[k] = np.int32(ksLoc[i][k][0])
             # Store resulting indices
             locInd[i] = currInd
+            
+            # Store max window width
+            chnWidth[i] = currWidth.max()
         
         # One colour channel present
         if len(nChns) == 1:
@@ -88,12 +100,14 @@ def ClusterEstimator(ksLoc):
                     # Iterate over current other colour channel
                     for k in range(len(locInd[j])):
                         # Compare location elements
-                        if locInd[dIdx][i] == locInd[j][k]:
+                        if np.abs(np.int32(locInd[dIdx][i]) -
+                                  np.int32(locInd[j][k])) <= chnWidth[j]:
                             # Increment number of clusters by one
                             n_clusters += 1
                         # Increment number of clusters by 2
                         else:
                             n_clusters += 2
+            return n_clusters
     # No colour channels present
     else:
         return n_clusters
