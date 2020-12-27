@@ -47,7 +47,7 @@ def KSMoG2(curr_hist, prev_hist):
         signCrit[i] = np.max(np.abs(curr_cdf - prev_cdf))
     
     # Null Hypothesis true
-    if ( signCrit[0] < 1.0 and signCrit[1] < 1.0 and signCrit[2] < 1.0):
+    if ( signCrit[0] > 1.0 and signCrit[1] > 1.0 and signCrit[2] > 1.0):
         return True
     # Alternative Hypothesis true
     else:
