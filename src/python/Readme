@@ -1,3 +1,5 @@
-The original .py files are contained in the "Original_files" folder, found & utilized in my dissertation paper.
+The original .py files, utilized in my dissertation paper, are contained in the "orig" branch.
 
-The further developed/currently developing files are contained in the "dev" folder.
+The further developed/currently developing files are contained in the "devel" branch.
+
+The "master" branch contains the most recent stable version.
