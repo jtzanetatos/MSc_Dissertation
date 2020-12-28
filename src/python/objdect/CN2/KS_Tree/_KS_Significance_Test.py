@@ -37,7 +37,7 @@ def KSTest(CN2winLoc, winVals, winLoc):
     # Last window comparison
     elif CN2winLoc[0] == 224:
         plainCDF = np.cumsum(winVals[-1, :])
-        overCDF = np.cumsum(winVals[winVals.shape[0] -2, :]) 
+        overCDF = np.cumsum(winVals[-2, :]) 
         
         # Significance test on two windows
         signCrit = np.max(np.abs(plainCDF - overCDF))
