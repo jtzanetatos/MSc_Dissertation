@@ -9,6 +9,9 @@ import numpy as np
 import cv2 as cv
 import objdect as obj
 import sys
+# import matplotlib.pyplot as plt
+# import matplotlib.animation as animation
+# from matplotlib import style
 
 def main():
     
@@ -46,149 +49,174 @@ def main():
     curr_hist = np.zeros((256, 3), dtype=np.uint32)
     prev_hist = np.zeros((256, 3), dtype=np.uint32)
     
+    # Frame counter
+    nFrame = 0
     
-    while True:
-        # Capture frame-by-frame
-        ret, frame = cap.read()
-        
-        # Get input frame dimmentions
-        width, height, col = frame.shape
-        
-        # If 10th frame
-        if mog_flg == 10:
+    # MoG2 convergence track
+    mogTrck = np.zeros(1, dtype=np.uint8)
+    
+    try:
+        while True:
+            # Capture frame-by-frame
+            ret, frame = cap.read()
             
-            # Evaluate histograms of past & current frame
-            for i in range(col):
-                curr_hist[:, i] = np.reshape(cv.calcHist(res2, [i], None, [256],
-                         [0, 256]), 256)
-                prev_hist[:, i] = np.reshape(cv.calcHist(prev_frame, [i], None,
-                     [256], [0, 256]), 256)
+            # Get input frame dimmentions
+            width, height, col = frame.shape
             
-            # Filter current and previous frames histograms
-            filt_curr = obj.histogram_ops.HistBpf(curr_hist)
-            filt_prev = obj.histogram_ops.HistBpf(prev_hist)
-            
-            # Normalize current & previous frames filtered histograms
-            norm_curr = obj.histogram_ops.HistNorm(filt_curr)
-            norm_prev = obj.histogram_ops.HistNorm(filt_prev)
-            
-            # Evaluate if K-S test indicates the MOG2 has converged
-            mog2_stat = obj.BG_converge.KSMoG2(norm_curr, norm_prev)
-            
-            # Implement plain & overlapping windows
-            win_vals, win_binloc = obj.histogram_ops.HistWindows(norm_curr)
-            
-            # Adaptive windows
-            wind_vals, wind_bins = obj.CN2.CN2Entropy(win_vals, win_binloc, norm_curr)
-            
-            # Evaluate the result of the STD test
-            # dev_stat = obj.BG_converge.HistDeviation(out_win_vals)
-            # Cluster estimator
-            # n_clusters = obj.CN2.KS_Tree.ClusterEstimator(wind_bins)
-            
-            # If MOG2 has converged
-            if mog2_stat and n_clusters > 2:
+            # If 10th frame
+            if mog_flg == 10:
                 
-                # Implement K-means clustering to segment detected objects
-                res_frame = obj.image_processing.kmeans_sk(frame, n_clusters)
-            else:
-                #apply MOG2 and get foreground pixels
-                fgmask = fgbg.apply(frame)
-                res2, res, contours = obj.image_processing.frame_proc(frame,
-                                                fgmask, kernel, contour_size)
+                # Evaluate histograms of past & current frame
+                for i in range(col):
+                    curr_hist[:, i] = np.reshape(cv.calcHist(res2, [i], None, [256],
+                             [0, 256]), 256)
+                    prev_hist[:, i] = np.reshape(cv.calcHist(prev_frame, [i], None,
+                         [256], [0, 256]), 256)
                 
-        else:
-            # If MOG2 has not converge
-            if mog2_stat==False:
-                #apply MOG2 and get foreground pixels
-                fgmask = fgbg.apply(frame)
-                res2, res, contours = obj.image_processing.frame_proc(frame,
-                                                fgmask, kernel, contour_size)
-            
-            # Apply previous mask on the current frame
-    #        else:
-    #            (res2, res, contours) = f.frame_proc(frame, prev_fgmask, kernel, contour_size)
-                # If number of clusters greater than two
-    #            if n_clusters > 2:
+                # Filter current and previous frames histograms
+                filt_curr = obj.histogram_ops.HistBpf(curr_hist)
+                filt_prev = obj.histogram_ops.HistBpf(prev_hist)
+                
+                # Normalize current & previous frames filtered histograms
+                norm_curr = obj.histogram_ops.HistNorm(filt_curr)
+                norm_prev = obj.histogram_ops.HistNorm(filt_prev)
+                
+                # Evaluate if K-S test indicates the MOG2 has converged
+                mog2_stat = obj.BG_converge.KSMoG2(norm_curr, norm_prev)
+                
+                # Implement plain & overlapping windows
+                win_vals, win_binloc = obj.histogram_ops.HistWindows(norm_curr)
+                
+                # Adaptive windows
+                wind_vals, wind_bins = obj.CN2.CN2Entropy(win_vals, win_binloc, norm_curr)
+                
+                # Evaluate the result of the STD test
+                # dev_stat = obj.BG_converge.HistDeviation(out_win_vals)
+                # Cluster estimator
+                n_clusters = obj.CN2.KS_Tree.ClusterEstimator(wind_bins)
+                
+                # If MOG2 has converged
+                if mog2_stat and n_clusters > 2:
+                    pass
+                    
                     # Implement K-means clustering to segment detected objects
-    #                res_frame = f.kmeans_cv(frame, n_clusters)
-        
-        # Show resulting frames
-        cv.imshow('Foreground', res2)
-        cv.drawContours(res, contours, -1, (0, 0, 255), 2)
-        cv.imshow('Contours', res)
-        cv.imshow('K-Means results', res_frame)
-        
-    #    dev_list.append(dev_stat)
-    #    mog2_list.append(mog2_stat)
-    #    clst.append(n_clusters)
-    #    
-        # Store raw frame data
-    #    raw_path = main_path +'/Measurements/Temp/raw_data'
-    #    try:
-    #        os.chdir(raw_path)
-    #    except OSError:
-    #        os.makedirs(raw_path)
-    #    
-    #    cv.imwrite(os.path.join(raw_path, str(n_frame) + 'raw_data.jpg'), frame ,
-    #               [int(cv.IMWRITE_JPEG_QUALITY), 100])
-    #    
-    #    # Store foreground frame data
-    #    fore_path = main_path + '/Measurements/Temp/fg_data'
-    #    try:
-    #        os.chdir(fore_path)
-    #    except OSError:
-    #        os.makedirs(fore_path)
-    #    
-    #    cv.imwrite(os.path.join(fore_path, str(n_frame) + 'fg_data.jpg'), res2, 
-    #               [int(cv.IMWRITE_JPEG_QUALITY), 100])
-    #    
-    #    # Store Contouts data
-    #    contour_path = main_path + '/Measurements/Temp/cont_data'
-    #    try:
-    #        os.chdir(contour_path)
-    #    except OSError:
-    #        os.makedirs(contour_path)
-    #    
-    #    cv.imwrite(os.path.join(contour_path, str(n_frame) + 'cont_data.jpg'), res, 
-    #               [int(cv.IMWRITE_JPEG_QUALITY), 100])
-        
-    #    # Store K-Means data
-    #    kmeans_path = main_path + '/Measurements/Temp/kmeans_data'
-    #    cv.imwrite(os.path.join(kmeans_path, str(n_frame) + 'kmeans_data.jpg'), res_frame,
-    #               [int(cv.IMWRITE_JPEG_QUALITY), 100])
-        
-        # n_frame += 1
-        # Store current frame for next iteration
-        if mog_flg == 1:
-            prev_frame = res2
+                    # res_frame = obj.image_processing.kmeans_sk(frame, n_clusters)
+                else:
+                    #apply MOG2 and get foreground pixels
+                    fgmask = fgbg.apply(frame)
+                    res2, res, contours = obj.image_processing.frame_proc(frame,
+                                                    fgmask, kernel, contour_size)
+                    
+            else:
+                # If MOG2 has not converge
+                if mog2_stat==False:
+                    #apply MOG2 and get foreground pixels
+                    fgmask = fgbg.apply(frame)
+                    res2, res, contours = obj.image_processing.frame_proc(frame,
+                                                    fgmask, kernel, contour_size)
+                
+                # Apply previous mask on the current frame
+        #        else:
+        #            (res2, res, contours) = f.frame_proc(frame, prev_fgmask, kernel, contour_size)
+                    # If number of clusters greater than two
+        #            if n_clusters > 2:
+                        # Implement K-means clustering to segment detected objects
+        #                res_frame = f.kmeans_cv(frame, n_clusters)
             
-            # Increment flag for next iteration
-            mog_flg += 1
+            # Show resulting frames
+            cv.imshow('Foreground', res2)
+            cv.drawContours(res, contours, -1, (0, 0, 255), 2)
+            cv.imshow('Contours', res)
+            # cv.imshow('K-Means results', res_frame)
             
-            # If MOG2 has converged keep current mask
-    #        if mog2_stat:
-    #            prev_fgmask = fgmask
-        
-        # Reset flag for next iteration
-        elif mog_flg == 10:
-            mog_flg = 1
-        
-        else:
-            # Increment by 1 the flag
-            mog_flg += 1
-        
-        # To break, press the q key
-        if cv.waitKey(1) & 0xFF == ord('q'):
-            break
-        # To save the current frame press 's' key
-        elif cv.waitKey(1) & 0xFF == ord('s'):
-            cv.imwrite('result.jpg', res2, [int(cv.IMWRITE_JPEG_QUALITY), 100])
-            print('Screenshot caputred successfully.')
-        
-    # Release capture & close all windows
-    cap.release()
-    cv.destroyAllWindows()
+        #    dev_list.append(dev_stat)
+        #    mog2_list.append(mog2_stat)
+        #    clst.append(n_clusters)
+        #    
+            # Store raw frame data
+        #    raw_path = main_path +'/Measurements/Temp/raw_data'
+        #    try:
+        #        os.chdir(raw_path)
+        #    except OSError:
+        #        os.makedirs(raw_path)
+        #    
+        #    cv.imwrite(os.path.join(raw_path, str(n_frame) + 'raw_data.jpg'), frame ,
+        #               [int(cv.IMWRITE_JPEG_QUALITY), 100])
+        #    
+        #    # Store foreground frame data
+        #    fore_path = main_path + '/Measurements/Temp/fg_data'
+        #    try:
+        #        os.chdir(fore_path)
+        #    except OSError:
+        #        os.makedirs(fore_path)
+        #    
+        #    cv.imwrite(os.path.join(fore_path, str(n_frame) + 'fg_data.jpg'), res2, 
+        #               [int(cv.IMWRITE_JPEG_QUALITY), 100])
+        #    
+        #    # Store Contouts data
+        #    contour_path = main_path + '/Measurements/Temp/cont_data'
+        #    try:
+        #        os.chdir(contour_path)
+        #    except OSError:
+        #        os.makedirs(contour_path)
+        #    
+        #    cv.imwrite(os.path.join(contour_path, str(n_frame) + 'cont_data.jpg'), res, 
+        #               [int(cv.IMWRITE_JPEG_QUALITY), 100])
+            
+        #    # Store K-Means data
+        #    kmeans_path = main_path + '/Measurements/Temp/kmeans_data'
+        #    cv.imwrite(os.path.join(kmeans_path, str(n_frame) + 'kmeans_data.jpg'), res_frame,
+        #               [int(cv.IMWRITE_JPEG_QUALITY), 100])
+            
+            # n_frame += 1
+            # Store current frame for next iteration
+            if mog_flg == 1:
+                prev_frame = res2
+                
+                # Increment flag for next iteration
+                mog_flg += 1
+                
+                # If MOG2 has converged keep current mask
+        #        if mog2_stat:
+        #            prev_fgmask = fgmask
+            
+            # Reset flag for next iteration
+            elif mog_flg == 10:
+                mog_flg = 1
+            
+            else:
+                # Increment by 1 the flag
+                mog_flg += 1
+            
+            # To break, press the q key
+            if cv.waitKey(1) & 0xFF == ord('q'):
+                break
+            # To save the current frame press 's' key
+            elif cv.waitKey(1) & 0xFF == ord('s'):
+                cv.imwrite('result.jpg', res2, [int(cv.IMWRITE_JPEG_QUALITY), 100])
+                print('Screenshot caputred successfully.')
+            
+            mogTrck = np.append(mogTrck, np.uint8(mog2_stat))
+            # style.use('fivethirtyeight')
+            # fig = plt.figure()
+            # ax = fig.add_subplot(1, 1, 1)
+            # line, = ax.plot(mogTrck)
+            
+            # def animate(i, x):
+                
+            #     line.set_ydata(x)
+            #     return line,
+            
+            # nFrame += 1
+            # ani = animation.FuncAnimation(fig, animate,fargs=(mog2_stat,),
+            #                               interval=50, blit=True)
+            # plt.show()
+    except Exception:
+        print(sys.exc_info()[0])
+    finally:
+        # Release capture & close all windows
+        cap.release()
+        cv.destroyAllWindows()
     
     #os.chdir(os.path.join(main_path + '/Measurements/Temp/'))
     ## Store clusters
