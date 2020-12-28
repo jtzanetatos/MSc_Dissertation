@@ -94,8 +94,8 @@ def NullHypothesis(CN2winLoc, histNorm, winLoc, signCrit):
             # Locate window
             elem = np.where(CN2winLoc[0] == winLoc[:, 0])[0][0]
             # Break when at limits of window
-            if ( winLoc[-2, -1] + idx == 255 or
-                winLoc[-2, -1] - idx == 0 ) and idx > 0:
+            if ( winLoc[elem+1, -1] + idx == 255 or
+                winLoc[elem-1, 0] - idx == 0 ):
                 break
             
             # Check direction to expand
