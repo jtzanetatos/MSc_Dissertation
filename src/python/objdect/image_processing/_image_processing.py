@@ -2,8 +2,10 @@
 """
 """
 
-import numpy as np
-import cv2 as cv
+from numpy import (float32, uint8, reshape, zeros)
+from cv2 import (TERM_CRITERIA_EPS, TERM_CRITERIA_MAX_ITER, KMEANS_PP_CENTERS,
+                 kmeans, bitwise_and, dilate, MORPH_CLOSE, findContours, 
+                 RETR_EXTERNAL, CHAIN_APPROX_SIMPLE)
 from sklearn.cluster import KMeans
 
 # --------------------------------------------------------------------------- #
@@ -32,17 +34,17 @@ def kmeans_cv(frame, n_clusters):
     
     '''
     # Define criteria
-    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 300, 1e-4)
+    criteria = (TERM_CRITERIA_EPS + TERM_CRITERIA_MAX_ITER, 300, 1e-4)
     
     # Flatten input frame
-    inpt_cv = np.float32(frame.reshape((-1, 3)))
+    inpt_cv = float32(frame.reshape((-1, 3)))
     
     # Fit current frame to the k-means algorithm
-    ret,label,center = cv.kmeans(inpt_cv, n_clusters, None, criteria,
-                               10, cv.KMEANS_PP_CENTERS)
+    ret,label,center = kmeans(inpt_cv, n_clusters, None, criteria,
+                               10, KMEANS_PP_CENTERS)
     
     # Obtain labels
-    center = np.uint8(center)
+    center = uint8(center)
     
     # Evaluate new frame based on resulting labels
     res_frame = center[label.flatten()]
@@ -83,7 +85,7 @@ def kmeans_sk(frame, n_clusters):
     row, colm, chns=  frame.shape
     
     # Flatten image values for the k-means algorithm
-    inpt = np.reshape(frame, (row * colm, chns))
+    inpt = reshape(frame, (row * colm, chns))
     
     # Initialize the k-means model
     kmeans = KMeans(n_clusters, init='k-means++')
@@ -95,7 +97,7 @@ def kmeans_sk(frame, n_clusters):
     labels = kmeans.predict(inpt)
     
     # Output separated objects into image
-    res_frame = np.zeros((row, colm, chns), dtype=np.uint8)
+    res_frame = zeros((row, colm, chns), dtype=uint8)
     
     # Initialize label index
     label_idx = 0
@@ -155,17 +157,17 @@ def frame_proc(frame, fgmask, kernel, contour_size):
     
     '''
     # Self bitwise operation on current frame
-    res = cv.bitwise_and(frame,frame, mask= fgmask)
+    res = bitwise_and(frame,frame, mask=fgmask)
     
     # Morphologically dilate current frame
-    e_im = cv.dilate(fgmask, kernel, iterations = 1)
+    e_im = dilate(fgmask, kernel, iterations=1)
     
     # Morphologically close current frame
-    e_im = cv.morphologyEx(e_im, cv.MORPH_CLOSE, kernel)
+    e_im = morphologyEx(e_im, MORPH_CLOSE, kernel)
     
     # Evaluate & capture each entire silhouettes
-    contours, hierarchy = cv.findContours(e_im, cv.RETR_EXTERNAL,
-                                          cv.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = findContours(e_im, RETR_EXTERNAL,
+                                          CHAIN_APPROX_SIMPLE)
     
     # Remove contours that are lower than threshold's value
     temp = []
@@ -183,7 +185,7 @@ def frame_proc(frame, fgmask, kernel, contour_size):
     
     # Perform bitwise and operation using the morphological processed frame as
     # a mask
-    res2 = cv.bitwise_and(frame,frame, mask = e_im)
+    res2 = bitwise_and(frame,frame, mask=e_im)
     
     # Return resulting frames and detected contours
     return res2, res, contours
