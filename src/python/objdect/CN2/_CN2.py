@@ -391,8 +391,8 @@ def CN2Entropy(win_vals, win_binloc, histNorm):
                 else:
                     continue
         # Initialize arrays to store arrays
-        wind_vals = np.empty(chns, dtype=np.object)
-        wind_bins = np.empty(chns, dtype=np.object)
+        wind_vals = np.empty(chns, dtype=object)
+        wind_bins = np.empty(chns, dtype=object)
         
         # Iterate over channels
         for i in range(chns):

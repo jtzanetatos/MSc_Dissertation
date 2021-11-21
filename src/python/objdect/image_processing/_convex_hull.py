@@ -259,3 +259,42 @@ def do_intersect(polygon1, polygon2):
             return True
     # Return false
     return False
+
+def overlapping_points(point, convex_hull):
+    '''
+    Winding Number Algorithm algorithm to determine if input point lies 
+    inside / on the convexpolygon or outside the (convex) polygon and their 
+    respective locations.
+    
+    References:
+        [1] https://www.eecs.umich.edu/courses/eecs380/HANDOUTS/PROJ2/InsidePoly.html
+        [2] https://towardsdatascience.com/is-the-point-inside-the-polygon-574b86472119
+    
+    Parameters
+    ----------
+    point : int/float 2 elements array
+        Set of Y X coordinates of input point.
+    polygon : inf/float N x 2 array
+        The convex hull of a set of points.
+    
+    Returns
+    -------
+    int/None
+        If int, points that overlap. None if no points overlapping.
+    
+    '''
+    
+    ccwTest = zeros(convex_hull.shape[0]-1)
+    
+    for i in range(1, convex_hull.shape[0]):
+        ccwTest[i-1] = _crossSlopeDir(convex_hull[i, :], convex_hull[i-1,:], point)
+    
+    for i in range(1, convex_hull.shape[0]-1):
+        if ccwTest[i-1] <= 0 and ccwTest[i] <= 0:
+            continue
+        elif ccwTest[i-1] >= 0 and ccwTest[i] >= 0:
+            continue
+        else:
+            return i-1, i
+    
+    return None
