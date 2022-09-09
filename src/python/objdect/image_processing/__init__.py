@@ -14,6 +14,6 @@ __all__ = [
     'kmeans_sk',
     'frame_proc',
     'convex_hull_from_points',
-    'point_is_in_polygon'',
+    'point_is_in_polygon',
     'do_intersect'
 ]
